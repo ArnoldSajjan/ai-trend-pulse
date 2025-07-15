@@ -1,44 +1,6 @@
-# Core Framework
-streamlit==1.29.0
-
-# HTTP Requests and APIs
-requests==2.31.0
-
-# Data Processing
-pandas==2.1.4
-
-# Data Visualization  
-plotly==5.17.0
-
-# RSS Feed Parsing
-feedparser==6.0.10
-
-# Environment Variables
-python-dotenv==1.0.0
-
-# Date and Time Utilities (built-in to Python, but listed for clarity)
-# datetime - built-in
-# time - built-in  
-# json - built-in
-# logging - built-in
-# re - built-in
-# os - built-in
-# urllib - built-in
-# typing - built-in
-# dataclasses - built-in (Python 3.7+)
-
-# Development Dependencies (uncomment for development)
-# pytest==7.4.3
-# black==23.11.0  
-# flake8==6.1.0
-# mypy==1.7.1
-
-# Optional: For enhanced error tracking (uncomment if needed)
-# sentry-sdk==1.38.0
-
-# Optional: For advanced caching (uncomment if needed)  
-# redis==5.0.1
-# streamlit-cache==0.1.3
-
-# Note: Keep this file minimal for faster deployment
-# Only include packages that are actually imported in the code
+streamlit
+requests
+pandas
+plotly
+feedparser
+python-dotenv
