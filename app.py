@@ -998,14 +998,12 @@ with tab2:
                 if not (start_date <= created_utc.date() <= end_date):
                     continue
             
-            # Post card
-            score = data.get("score", 0)  # Get the score from data
+
             st.markdown(f"""
                 <div class="trending-card">
                     <h3><a href="https://reddit.com{data['permalink']}" target="_blank">{data['title']}</a></h3>
                     <div>
                         <span class="stats-badge">r/{data['subreddit']}</span>
-                        <span class="stats-badge">⬆️ {format_number(score)} upvotes</span>
                         <span class="stats-badge">💬 {format_number(data.get('num_comments', 0))} comments</span>
                     </div>
                     <p><small>Posted: {time_ago(created_utc)}</small></p>
@@ -1016,6 +1014,7 @@ with tab2:
 
 # Hacker News Tab
 with tab3:
+    
     st.markdown('<div class="platform-header">💻 Hacker News AI Stories</div>', unsafe_allow_html=True)
     
     # HN filters
@@ -1038,7 +1037,6 @@ with tab3:
                 <div class="trending-card">
                     <h3><a href="{url}" target="_blank">{item.get('title', 'No Title')}</a></h3>
                     <div>
-                        <span class="stats-badge">🔥 {format_number(score)} points</span>
                         <span class="stats-badge">💬 {format_number(item.get('descendants', 0))} comments</span>
                         <span class="stats-badge">👤 {item.get('by', 'Unknown')}</span>
                     </div>
