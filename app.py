@@ -370,7 +370,6 @@ class HackerNewsAPI:
         
         return stories  # 2024+
             
-            
 class AIToolsAPI:
     def __init__(self):
         self.sources = config.AI_TOOLS_SOURCES
