@@ -15,6 +15,7 @@ from bs4 import BeautifulSoup
 import time
 from urllib.parse import quote_plus, urlencode
 import random
+import pytz
 from config import config
 
 # Set up logging
@@ -84,12 +85,10 @@ class EnhancedAINewsAPI:
                 seen_titles.add(article['title'])
                 unique_articles.append(article)
         
-        # Filter and sort
-        valid_articles = [article for article in unique_articles if isinstance(article.get('published'), datetime)]
-        valid_articles.sort(key=lambda x: x['published'], reverse=True)
-
-        return valid_articles
-
+        # Sort by date
+        unique_articles.sort(key=lambda x: x['published'], reverse=True)
+        
+        return unique_articles[:100]  # Return top 100 articles
     
     def _fetch_rss_feeds(_self) -> List[Dict]:
         """Fetch articles from RSS feeds"""
@@ -137,19 +136,26 @@ class EnhancedAINewsAPI:
                 data = response.json()
                 
                 for item in data:
-                    article = {
-                        "title": item['title'],
-                        "link": item['url'],
-                        "published": datetime.fromisoformat(item['published_at'].replace('Z', '+00:00')),
-                        "summary": item.get('description', 'Read more on Dev.to'),
-                        "source": "Dev.to",
-                        "author": item['user']['name'],
-                        "type": "article",
-                        "tags": item.get('tag_list', []),
-                        "reading_time": item.get('reading_time_minutes', 0),
-                        "reactions": item.get('positive_reactions_count', 0)
-                    }
-                    articles.append(article)
+                    try:
+                        # Parse the ISO format date
+                        published_at = item['published_at'].replace('Z', '+00:00')
+                        published_dt = datetime.fromisoformat(published_at)
+                        
+                        article = {
+                            "title": item['title'],
+                            "link": item['url'],
+                            "published": published_dt,
+                            "summary": item.get('description', 'Read more on Dev.to'),
+                            "source": "Dev.to",
+                            "author": item['user']['name'],
+                            "type": "article",
+                            "tags": item.get('tag_list', []),
+                            "reading_time": item.get('reading_time_minutes', 0),
+                            "reactions": item.get('positive_reactions_count', 0)
+                        }
+                        articles.append(article)
+                    except Exception as e:
+                        logger.error(f"Error parsing Dev.to article: {e}")
                     
         except Exception as e:
             logger.error(f"Error fetching Dev.to articles: {e}")
@@ -171,18 +177,24 @@ class EnhancedAINewsAPI:
                 data = response.json()
                 
                 for item in data[:20]:  # Get top 20
-                    article = {
-                        "title": item['title'],
-                        "link": item['url'],
-                        "published": datetime.fromisoformat(item['created_at']),
-                        "summary": f"{item.get('comment_count', 0)} comments • {item.get('score', 0)} points",
-                        "source": "Lobsters",
-                        "author": item.get('submitter_user', {}).get('username', 'Unknown'),
-                        "type": "discussion",
-                        "tags": item.get('tags', []),
-                        "score": item.get('score', 0)
-                    }
-                    articles.append(article)
+                    try:
+                        # Parse the ISO format date
+                        created_dt = datetime.fromisoformat(item['created_at'])
+                        
+                        article = {
+                            "title": item['title'],
+                            "link": item['url'],
+                            "published": created_dt,
+                            "summary": f"{item.get('comment_count', 0)} comments • {item.get('score', 0)} points",
+                            "source": "Lobsters",
+                            "author": item.get('submitter_user', {}).get('username', 'Unknown'),
+                            "type": "discussion",
+                            "tags": item.get('tags', []),
+                            "score": item.get('score', 0)
+                        }
+                        articles.append(article)
+                    except Exception as e:
+                        logger.error(f"Error parsing Lobsters article: {e}")
                     
         except Exception as e:
             logger.error(f"Error fetching Lobsters: {e}")
@@ -219,12 +231,22 @@ class EnhancedAINewsAPI:
     
     def _parse_date(_self, entry) -> datetime:
         """Parse date from various formats"""
-        if hasattr(entry, 'published_parsed') and entry.published_parsed:
-            return datetime(*entry.published_parsed[:6])
-        elif hasattr(entry, 'updated_parsed') and entry.updated_parsed:
-            return datetime(*entry.updated_parsed[:6])
-        else:
-            return datetime.now()
+        try:
+            if hasattr(entry, 'published_parsed') and entry.published_parsed:
+                dt = datetime(*entry.published_parsed[:6])
+            elif hasattr(entry, 'updated_parsed') and entry.updated_parsed:
+                dt = datetime(*entry.updated_parsed[:6])
+            else:
+                dt = datetime.now()
+            
+            # Make timezone aware
+            if dt.tzinfo is None:
+                dt = pytz.UTC.localize(dt)
+            
+            return dt
+        except:
+            # Return current time with timezone if parsing fails
+            return datetime.now(pytz.UTC)
     
     def _clean_summary(_self, entry) -> str:
         """Clean and format summary"""
@@ -603,7 +625,7 @@ class AIResearchAPI:
                             "url": entry.link,
                             "authors": [author.name for author in entry.authors],
                             "summary": entry.summary[:300] + "...",
-                            "published": datetime.strptime(entry.published, "%Y-%m-%dT%H:%M:%SZ"),
+                            "published": datetime.strptime(entry.published, "%Y-%m-%dT%H:%M:%SZ").replace(tzinfo=pytz.UTC),
                             "category": entry.arxiv_primary_category['term'],
                             "source": "arXiv"
                         }
@@ -637,7 +659,7 @@ class AIJobsAPI:
                 "location": "Remote",
                 "salary": "$150k - $200k",
                 "url": "#",
-                "posted": datetime.now() - timedelta(days=1),
+                "posted": datetime.now(pytz.UTC) - timedelta(days=1),
                 "tags": ["Python", "TensorFlow", "MLOps"],
                 "source": "Indeed"
             }
@@ -662,11 +684,16 @@ class AIPodcastAPI:
                 
                 if feed.entries:
                     for entry in feed.entries[:3]:  # Get latest 3 per podcast
+                        # Parse date
+                        published = datetime.now(pytz.UTC)
+                        if hasattr(entry, 'published_parsed') and entry.published_parsed:
+                            published = datetime(*entry.published_parsed[:6], tzinfo=pytz.UTC)
+                        
                         episode = {
                             "title": entry.title,
                             "url": entry.link,
                             "podcast": podcast_name.replace('_', ' ').title(),
-                            "published": datetime(*entry.published_parsed[:6]) if hasattr(entry, 'published_parsed') else datetime.now(),
+                            "published": published,
                             "duration": entry.get('itunes_duration', 'Unknown'),
                             "summary": entry.get('summary', '')[:200] + "...",
                             "source": "Podcast"
@@ -727,11 +754,13 @@ def format_number(num: int) -> str:
 def time_ago(timestamp: Union[datetime, float]) -> str:
     """Human-readable time difference"""
     if isinstance(timestamp, float):
-        timestamp = datetime.fromtimestamp(timestamp)
+        timestamp = datetime.fromtimestamp(timestamp, tz=pytz.UTC)
     
-    now = datetime.now()
-    timestamp = timestamp.replace(tzinfo=None)  # Strip timezone info
-
+    # Ensure timestamp is timezone aware
+    if timestamp.tzinfo is None:
+        timestamp = pytz.UTC.localize(timestamp)
+    
+    now = datetime.now(pytz.UTC)
     diff = now - timestamp
     
     if diff.days > 365:

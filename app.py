@@ -3,12 +3,13 @@ AI TrendPulse - Main Application
 Real-time AI news, tools, research, and community insights
 """
 import streamlit as st
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 import pandas as pd
 import plotly.express as px
 import plotly.graph_objects as go
 from typing import List, Dict
 import logging
+import pytz
 
 # Import custom modules
 from config import config
@@ -271,7 +272,11 @@ if tabs:
                 for article in news_data:
                     if isinstance(date_range, tuple) and len(date_range) == 2:
                         start_date, end_date = date_range
-                        if start_date <= article['published'].date() <= end_date:
+                        # Convert article date to date only for comparison
+                        article_date = article['published'].date()
+                        if hasattr(article['published'], 'date'):
+                            article_date = article['published'].date()
+                        if start_date <= article_date <= end_date:
                             filtered_news.append(article)
                 
                 # Display news with ads
