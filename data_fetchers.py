@@ -85,7 +85,15 @@ class EnhancedAINewsAPI:
                 unique_articles.append(article)
         
         # Sort by date
-        unique_articles.sort(key=lambda x: x['published'], reverse=True)
+        # Filter out articles where 'published' is None or missing
+        valid_articles = [a for a in unique_articles if a.get('published')]
+
+        # Sort only valid ones
+        valid_articles.sort(key=lambda x: x['published'], reverse=True)
+
+        # Use sorted valid_articles (or append the rest if needed)
+        unique_articles = valid_articles
+
         
         return unique_articles[:100]  # Return top 100 articles
     
