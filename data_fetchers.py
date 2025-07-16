@@ -84,18 +84,10 @@ class EnhancedAINewsAPI:
                 seen_titles.add(article['title'])
                 unique_articles.append(article)
         
-        # Step 1: Filter out invalid or missing published fields
+        # Filter and sort
         valid_articles = [article for article in unique_articles if isinstance(article.get('published'), datetime)]
-
-        # Optional: log skipped ones (for debugging)
-        invalid_articles = [article for article in unique_articles if not isinstance(article.get('published'), datetime)]
-        if invalid_articles:
-            print(f"[DEBUG] Skipping {len(invalid_articles)} articles without valid 'published' datetime")
-
-        # Step 2: Sort valid articles safely
         valid_articles.sort(key=lambda x: x['published'], reverse=True)
 
-        # Step 3: Return only valid ones (or combine if you want)
         return valid_articles
 
     
