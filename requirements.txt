@@ -1,7 +1,11 @@
 streamlit
 requests
+feedparser
+beautifulsoup4
 pandas
 plotly
-feedparser
-python-dotenv
 aiohttp
+asyncio
+python-dateutil
+pytz
+lxml
