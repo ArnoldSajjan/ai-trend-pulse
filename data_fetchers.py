@@ -84,18 +84,20 @@ class EnhancedAINewsAPI:
                 seen_titles.add(article['title'])
                 unique_articles.append(article)
         
-        # Sort by date
-        # Filter out articles where 'published' is None or missing
-        valid_articles = [a for a in unique_articles if a.get('published')]
+        # Step 1: Filter out invalid or missing published fields
+        valid_articles = [article for article in unique_articles if isinstance(article.get('published'), datetime)]
 
-        # Sort only valid ones
+        # Optional: log skipped ones (for debugging)
+        invalid_articles = [article for article in unique_articles if not isinstance(article.get('published'), datetime)]
+        if invalid_articles:
+            print(f"[DEBUG] Skipping {len(invalid_articles)} articles without valid 'published' datetime")
+
+        # Step 2: Sort valid articles safely
         valid_articles.sort(key=lambda x: x['published'], reverse=True)
 
-        # Use sorted valid_articles (or append the rest if needed)
-        unique_articles = valid_articles
+        # Step 3: Return only valid ones (or combine if you want)
+        return valid_articles
 
-        
-        return unique_articles[:100]  # Return top 100 articles
     
     def _fetch_rss_feeds(_self) -> List[Dict]:
         """Fetch articles from RSS feeds"""
