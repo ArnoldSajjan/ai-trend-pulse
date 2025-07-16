@@ -4,3 +4,4 @@ pandas
 plotly
 feedparser
 python-dotenv
+aiohttp
